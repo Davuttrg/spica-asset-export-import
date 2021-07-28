@@ -1,0 +1,107 @@
+# API KEY
+apiVersion: passport/v1
+kind: ApiKey
+metadata:
+  name: export-import-apikey
+spec:
+  name: Secret Api Key For Exporter Importer
+  policies:
+    - BucketFullAccess
+---
+# EXPORT DASHBOARD
+apiVersion: dashboard/v1
+kind: Dashboard
+metadata:
+  name: import-export-dashboard
+spec:
+  name: Import Export Bucket-Data
+  icon: sync_alt
+  components:
+    - name: Export
+      url: api:/fn-execute/export-component
+      type: card
+    - name: Import
+      url: api:/fn-execute/import-component
+      type: card
+---
+# FUNCTION EXPORTER
+apiVersion: function/v1
+kind: Function
+metadata:
+  name: import-export-function
+spec:
+  title: Import Export Bucket-Data
+  description: "Import-export bucket-data"
+  timeout: 10
+  code: ./function/index.js
+  runtime:
+    name: Node
+    language: Javascript
+  environment:
+    - name: AUTH_APIKEY
+      valueFrom:
+        resourceFieldRef:
+          apiKeyName: export-import-apikey
+  dependency:
+    - name: "@spica-devkit/bucket"
+      version: latest
+    - name: "json2csv"
+      version: latest
+    - name: "adm-zip"
+      version: latest
+    - name: "xlsx"
+      version: latest
+    - name: "csvtojson"
+      version: latest
+---
+# TRIGGER - Export component
+apiVersion: function/v1
+kind: Trigger
+metadata:
+  name: export-component
+spec:
+  name: exportComponent
+  func: import-export-function
+  type: http
+  httpOptions:
+    method: Get
+    path: /export-component
+---
+# TRIGGER - Start export
+apiVersion: function/v1
+kind: Trigger
+metadata:
+  name: start-export
+spec:
+  name: startExport
+  func: import-export-function
+  type: http
+  httpOptions:
+    method: Get
+    path: /start-export
+---
+# TRIGGER - Import component
+apiVersion: function/v1
+kind: Trigger
+metadata:
+  name: import-component
+spec:
+  name: importComponent
+  func: import-export-function
+  type: http
+  httpOptions:
+    method: Get
+    path: /import-component
+---
+# TRIGGER - Start import
+apiVersion: function/v1
+kind: Trigger
+metadata:
+  name: start-import
+spec:
+  name: startImport
+  func: import-export-function
+  type: http
+  httpOptions:
+    method: Post
+    path: /start-import
